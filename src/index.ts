@@ -1,0 +1,1 @@
+import express from 'express'; const app = express(); app.use(express.json()); app.get('/', (req, res) => res.send('API is live')); app.listen(4000, () => console.log('API listening on http://localhost:4000'));

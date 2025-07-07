@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  picks     Pick[]
+  createdAt DateTime @default(now())
+}
+
+model Sport {
+  id            Int            @id @default(autoincrement())
+  slug          String         @unique // "nba", "nfl", etc.
+  name          String
+  propTemplates PropTemplate[]
+  contests      Contest[]
+}
+
+model PropTemplate {
+  id          Int       @id @default(autoincrement())
+  sport       Sport     @relation(fields: [sportId], references: [id])
+  sportId     Int
+  description String
+  statKey     String
+  threshold   Float
+  direction   String // "over" or "under"
+  contests    Contest[]
+}
+
+model Contest {
+  id          Int          @id @default(autoincrement())
+  sport       Sport        @relation(fields: [sportId], references: [id])
+  sportId     Int
+  template    PropTemplate @relation(fields: [templateId], references: [id])
+  templateId  Int
+  contestType String // "daily" or "weekly"
+  startAt     DateTime
+  endAt       DateTime
+  picks       Pick[]
+}
+
+model Pick {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  contest   Contest  @relation(fields: [contestId], references: [id])
+  contestId Int
+  choice    String // "over" or "under"
+  score     Float? // nullable until scored
+  createdAt DateTime @default(now())
+}
