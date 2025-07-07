@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.6",
+    "@heroicons/react": "^2.2.0",
     "@tanstack/react-query": "^5.81.5",
     "axios": "^1.10.0",
     "framer-motion": "^12.22.0",
