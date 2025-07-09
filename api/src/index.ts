@@ -7,6 +7,7 @@ import contestsRouter from './routes/contests';
 import picksRouter from './routes/picks';
 import leaderboardRouter from './routes/leaderboard';
 import { runScoring } from './jobs/scoring';
+import usersRouter from './routes/users';
 
 const app = express();
 app.use(cors());
@@ -18,6 +19,8 @@ app.use('/api/templates', templatesRouter);
 app.use('/api/contests', contestsRouter);
 app.use('/api/contests/:contestId/picks', picksRouter);
 app.use('/api/contests/:contestId/leaderboard', leaderboardRouter);
+app.use('/api/users', usersRouter);
+
 
 app.get('/', (_req: Request, res: Response) => {
   res.send('API is live');
