@@ -32,6 +32,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </Link>
 
           <div className="flex items-center space-x-4">
+            {/* Dark mode toggle */}
             <button
               onClick={toggle}
               aria-label="Toggle dark mode"
@@ -44,6 +45,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               )}
             </button>
 
+            {/* Mobile menu toggle */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Toggle navigation menu"
@@ -57,6 +59,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               )}
             </button>
 
+            {/* Navigation links */}
             <nav
               role="navigation"
               className={`${menuOpen ? 'block' : 'hidden'} md:block`}
