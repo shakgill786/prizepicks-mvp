@@ -1,3 +1,11 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/700.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* override Tailwind’s default font stack */
+:root {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont;
+  }
