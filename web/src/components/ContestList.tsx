@@ -1,35 +1,25 @@
-// web/src/ContestList.tsx
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+// web/src/components/ContestList.tsx
+import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { getContests } from '../services/api'
+
+interface Contest {
+  id: number
+  sport: string
+  type: string
+  description: string
+}
 
 export default function ContestList() {
-  const [contests, setContests] = useState<any[] | null>(null);
-  const [error, setError] = useState(false);
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+  const { data: contests, status } = useQuery<Contest[], Error>({
+    queryKey: ['contests'],
+    queryFn: getContests,
+  })
 
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      try {
-        const res = await fetch('/api/contests');
-        const data = await res.json();
-        if (mounted) setContests(data);
-      } catch {
-        if (mounted) setError(true);
-      }
-    }
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (error) {
-    return <div className="text-red-500">Failed to load contests</div>;
-  }
-
-  if (!contests) {
+  // loading
+  if (status === 'pending') {
     return (
       <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
@@ -51,25 +41,31 @@ export default function ContestList() {
           </div>
         ))}
       </div>
-    );
+    )
   }
 
+  // error
+  if (status === 'error') {
+    return <div className="text-red-500">Failed to load contests</div>
+  }
+
+  // success
   return (
     <section aria-labelledby="contests-heading">
       <h2 id="contests-heading" className="sr-only">
         Available Contests
       </h2>
       <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {contests.map((c) => (
+        {contests!.map((c: Contest) => (
           <motion.div
             key={c.id}
-            whileHover={{ scale: 1.03 }}
             role="link"
             tabIndex={0}
+            whileHover={{ scale: 1.03 }}
             onClick={() => navigate(`/contests/${c.id}`)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                navigate(`/contests/${c.id}`);
+                navigate(`/contests/${c.id}`)
               }
             }}
             className="
@@ -87,14 +83,14 @@ export default function ContestList() {
             </p>
             <motion.button
               whileTap={{ scale: 0.95 }}
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate(`/contests/${c.id}`)
+              }}
               className="
                 mt-4 px-4 py-2 bg-accent text-white rounded hover:bg-accent/90
                 focus:outline-none focus:ring focus:ring-primary focus:ring-offset-2
               "
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/contests/${c.id}`);
-              }}
               aria-label={`Go to contest ${c.id}`}
             >
               View &amp; Pick
@@ -103,5 +99,5 @@ export default function ContestList() {
         ))}
       </div>
     </section>
-  );
+  )
 }

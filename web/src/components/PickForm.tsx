@@ -1,9 +1,9 @@
 // web/src/components/PickForm.tsx
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
-import { submitPick } from '../services/api';
+import { useForm, type SubmitHandler } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as yup from 'yup'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { submitPick } from '../services/api'
 
 const schema = yup
   .object({
@@ -12,45 +12,44 @@ const schema = yup
       .oneOf(['over', 'under'], 'Select Over or Under')
       .required('Choice is required'),
   })
-  .required();
+  .required()
 
-type FormData = { choice: 'over' | 'under' };
+type FormData = { choice: 'over' | 'under' }
 
 export default function PickForm({
   contestId,
   userId,
 }: {
-  contestId: number;
-  userId: number;
+  contestId: number
+  userId: number
 }) {
+  const queryClient = useQueryClient()
+
+  // v5: single options object
+  const mutation = useMutation({
+    mutationFn: (data: FormData) =>
+      submitPick(contestId, { userId, choice: data.choice }),
+    onSuccess: () => {
+      // refetch the leaderboard for this contest
+      queryClient.invalidateQueries({ queryKey: ['leaderboard', contestId] })
+      // (optionally) refetch this user's picks if you have a "my-picks" query
+      queryClient.invalidateQueries({ queryKey: ['myPicks', userId] })
+    },
+  })
+
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid, isSubmitting },
+    formState: { errors, isValid },
   } = useForm<FormData>({
     mode: 'onChange',
     resolver: yupResolver(schema),
     defaultValues: { choice: 'over' },
-  });
+  })
 
-  const onSubmit = async (data: FormData) => {
-    console.log('🔄 Submitting pick:', {
-      contestId,
-      userId,
-      choice: data.choice,
-    });
-    try {
-      const result = await submitPick(contestId, {
-        userId,
-        choice: data.choice,
-      });
-      console.log('✅ Pick result:', result);
-      alert('Pick submitted!');
-    } catch (err: any) {
-      console.error('❌ submitPick error:', err);
-      alert('Error submitting pick: ' + (err.message || err));
-    }
-  };
+  const onSubmit: SubmitHandler<FormData> = (data) => {
+    mutation.mutate(data)
+  }
 
   return (
     <form
@@ -59,7 +58,7 @@ export default function PickForm({
       aria-labelledby="pick-form-heading"
     >
       <div className="flex-grow">
-        <label htmlFor="choice" className="block font-medium mb-1">
+        <label htmlFor="choice" className="block mb-1 font-medium">
           Your Pick
         </label>
         <select
@@ -75,23 +74,25 @@ export default function PickForm({
           <option value="under">Under</option>
         </select>
         {errors.choice && (
-          <p className="text-red-500 text-sm mt-1">{errors.choice.message}</p>
+          <p className="text-red-500 text-sm mt-1">
+            {errors.choice.message}
+          </p>
         )}
       </div>
 
       <button
         type="submit"
-        disabled={!isValid || isSubmitting}
+        disabled={!isValid || mutation.isPending}
         className={`
           px-4 py-2 bg-green-500 text-white rounded
           focus:outline-none focus:ring focus:ring-primary focus:ring-offset-2
-          ${!isValid || isSubmitting
+          ${!isValid || mutation.isPending
             ? 'opacity-50 cursor-not-allowed'
             : 'hover:bg-green-600'}
         `}
       >
-        {isSubmitting ? 'Submitting…' : 'Submit Pick'}
+        {mutation.isPending ? 'Submitting…' : 'Submit Pick'}
       </button>
     </form>
-  );
+  )
 }

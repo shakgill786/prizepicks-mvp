@@ -1,8 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
-import { getSports, getTemplates, createContest } from '../services/api';
+// web/src/components/AdminContestForm.tsx
+import { useEffect } from 'react'
+import { useForm, type SubmitHandler } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as yup from 'yup'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { getSports, getTemplates, createContest } from '../services/api'
+
+interface Sport { id: number; name: string }
+interface Template { id: number; description: string }
 
 const schema = yup
   .object({
@@ -11,42 +16,66 @@ const schema = yup
       .typeError('Sport is required')
       .positive()
       .integer()
-      .required('Sport is required'),
+      .required(),
     templateId: yup
       .number()
       .typeError('Template is required')
       .positive()
       .integer()
-      .required('Template is required'),
+      .required(),
     contestType: yup
       .string()
-      .oneOf(['daily', 'weekly'])
-      .required('Type is required'),
+      .oneOf(['daily','weekly'])
+      .required(),
     startAt: yup.string().required('Start time is required'),
     endAt: yup
       .string()
       .required('End time is required')
-      .test(
-        'is-after',
-        'End time must be after start time',
-        function (value) {
-          const { startAt } = this.parent;
-          return new Date(value) > new Date(startAt);
-        }
-      ),
+      .test('is-after','End must be after start', function(val) {
+        return new Date(val) > new Date(this.parent.startAt)
+      }),
   })
-  .required();
-type FormData = yup.InferType<typeof schema>;
+  .required()
+
+type FormData = yup.InferType<typeof schema>
 
 export default function AdminContestForm() {
-  const [sports, setSports] = useState<any[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
+  const qc = useQueryClient()
 
+  // fetch sports
+  const {
+    data: sports = [],
+    status: sportsStatus,
+  } = useQuery<Sport[]>({
+    queryKey: ['sports'],
+    queryFn: getSports,
+  })
+
+  // fetch templates
+  const {
+    data: templates = [],
+    status: templatesStatus,
+  } = useQuery<Template[]>({
+    queryKey: ['templates'],
+    queryFn: getTemplates,
+  })
+
+  // mutation
+  const { mutate, status: createStatus } = useMutation({
+    mutationFn: createContest,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['contests'] })
+      reset()
+      alert('Contest created!')
+    },
+  })
+
+  // form
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isValid, isSubmitting },
+    formState: { errors, isValid },
   } = useForm<FormData>({
     mode: 'onChange',
     resolver: yupResolver(schema),
@@ -57,18 +86,27 @@ export default function AdminContestForm() {
       startAt: '',
       endAt: '',
     },
-  });
+  })
 
-  useEffect(() => {
-    getSports().then(setSports);
-    getTemplates().then(setTemplates);
-  }, []);
+  const onSubmit: SubmitHandler<FormData> = (data) => mutate(data)
 
-  const onSubmit = async (data: FormData) => {
-    await createContest(data);
-    alert('Contest created!');
-    reset();
-  };
+  // loading & error flags
+  const loadingSports     = sportsStatus     === 'pending'
+  const errorSports       = sportsStatus     === 'error'
+  const loadingTemplates  = templatesStatus  === 'pending'
+  const errorTemplates    = templatesStatus  === 'error'
+  const isCreating        = createStatus     === 'pending'
+
+  if (loadingSports || loadingTemplates) {
+    return <div>Loading form…</div>
+  }
+  if (errorSports || errorTemplates) {
+    return (
+      <div className="text-red-500">
+        Failed to load sports or templates
+      </div>
+    )
+  }
 
   return (
     <form
@@ -82,7 +120,7 @@ export default function AdminContestForm() {
 
       {/* Sport */}
       <div>
-        <label htmlFor="sportId" className="block font-medium mb-1">
+        <label htmlFor="sportId" className="block mb-1 font-medium">
           Sport
         </label>
         <select
@@ -95,20 +133,22 @@ export default function AdminContestForm() {
           `}
         >
           <option value="">Select sport</option>
-          {sports.map((s) => (
+          {sports.map((s: Sport) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
           ))}
         </select>
         {errors.sportId && (
-          <p className="text-red-500 text-sm mt-1">{errors.sportId.message}</p>
+          <p className="text-red-500 text-sm mt-1">
+            {errors.sportId.message}
+          </p>
         )}
       </div>
 
       {/* Template */}
       <div>
-        <label htmlFor="templateId" className="block font-medium mb-1">
+        <label htmlFor="templateId" className="block mb-1 font-medium">
           Template
         </label>
         <select
@@ -121,7 +161,7 @@ export default function AdminContestForm() {
           `}
         >
           <option value="">Select template</option>
-          {templates.map((t) => (
+          {templates.map((t: Template) => (
             <option key={t.id} value={t.id}>
               {t.description}
             </option>
@@ -136,7 +176,7 @@ export default function AdminContestForm() {
 
       {/* Type */}
       <div>
-        <label htmlFor="contestType" className="block font-medium mb-1">
+        <label htmlFor="contestType" className="block mb-1 font-medium">
           Type
         </label>
         <select
@@ -160,7 +200,7 @@ export default function AdminContestForm() {
 
       {/* Start At */}
       <div>
-        <label htmlFor="startAt" className="block font-medium mb-1">
+        <label htmlFor="startAt" className="block mb-1 font-medium">
           Start At
         </label>
         <input
@@ -174,13 +214,15 @@ export default function AdminContestForm() {
           `}
         />
         {errors.startAt && (
-          <p className="text-red-500 text-sm mt-1">{errors.startAt.message}</p>
+          <p className="text-red-500 text-sm mt-1">
+            {errors.startAt.message}
+          </p>
         )}
       </div>
 
       {/* End At */}
       <div>
-        <label htmlFor="endAt" className="block font-medium mb-1">
+        <label htmlFor="endAt" className="block mb-1 font-medium">
           End At
         </label>
         <input
@@ -194,23 +236,24 @@ export default function AdminContestForm() {
           `}
         />
         {errors.endAt && (
-          <p className="text-red-500 text-sm mt-1">{errors.endAt.message}</p>
+          <p className="text-red-500 text-sm mt-1">
+            {errors.endAt.message}
+          </p>
         )}
       </div>
 
       <button
         type="submit"
-        disabled={!isValid || isSubmitting}
+        disabled={!isValid || isCreating}
         className={`
-          w-full text-center px-4 py-2 bg-blue-600 text-white rounded
-          focus:outline-none focus:ring focus:ring-primary focus:ring-offset-2
-          ${!isValid || isSubmitting
-            ? 'opacity-50 cursor-not-allowed'
-            : 'hover:bg-blue-700'}
+          w-full px-4 py-2 text-white rounded focus:ring focus:ring-primary focus:ring-offset-2
+          ${!isValid || isCreating
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-primary hover:bg-primary-dark'}
         `}
       >
-        {isSubmitting ? 'Creating…' : 'Create Contest'}
+        {isCreating ? 'Creating…' : 'Create Contest'}
       </button>
     </form>
-  );
+  )
 }

@@ -60,10 +60,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             </button>
 
             {/* Navigation links */}
-            <nav
-              role="navigation"
-              className={`${menuOpen ? 'block' : 'hidden'} md:block`}
-            >
+            <nav role="navigation" className={`${menuOpen ? 'block' : 'hidden'} md:block`}>
               <ul className="flex flex-col md:flex-row md:space-x-6 text-gray-700 dark:text-gray-200">
                 {navLinks.map(({ label, to }) => (
                   <li key={to}>
@@ -88,17 +85,11 @@ export default function Layout({ children }: { children: ReactNode }) {
       <footer className="bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
           © {new Date().getFullYear()} PrizePicks MVP •{' '}
-          <Link
-            to="/faq"
-            className="focus:outline-none focus:ring focus:ring-primary focus:ring-offset-2"
-          >
+          <Link to="/faq" className="focus:outline-none focus:ring focus:ring-primary focus:ring-offset-2">
             FAQ
           </Link>{' '}
           •{' '}
-          <Link
-            to="/contact"
-            className="focus:outline-none focus:ring focus:ring-primary focus:ring-offset-2"
-          >
+          <Link to="/contact" className="focus:outline-none focus:ring focus:ring-primary focus:ring-offset-2">
             Contact
           </Link>
         </div>

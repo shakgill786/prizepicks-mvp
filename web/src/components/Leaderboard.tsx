@@ -1,17 +1,18 @@
-import useSWR from 'swr';
-import { getLeaderboard } from '../services/api';
+import React from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { getLeaderboard } from '../services/api'
 
 export default function Leaderboard({ contestId }: { contestId: number }) {
-  const { data, error } = useSWR(
-    `/api/contests/${contestId}/leaderboard`,
-    () => getLeaderboard(contestId),
-    { refreshInterval: 5000 }
-  );
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['leaderboard', contestId],
+    queryFn: () => getLeaderboard(contestId),
+    refetchInterval: 5000,
+  })
 
-  if (error) return <div className="text-red-500">Error loading leaderboard</div>;
-
-  // Skeleton loading state: 5 rows placeholder
-  if (!data) {
+  if (isError) {
+    return <div className="text-red-500">Error loading leaderboard</div>
+  }
+  if (isLoading || !data) {
     return (
       <table className="min-w-full border-collapse">
         <thead>
@@ -33,10 +34,9 @@ export default function Leaderboard({ contestId }: { contestId: number }) {
           ))}
         </tbody>
       </table>
-    );
+    )
   }
 
-  // Actual data
   return (
     <table className="min-w-full border border-gray-300 dark:border-gray-700">
       <thead>
@@ -46,7 +46,7 @@ export default function Leaderboard({ contestId }: { contestId: number }) {
         </tr>
       </thead>
       <tbody>
-        {data.map((p: any) => (
+        {data.map((p: { id: number; score: number | null }) => (
           <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
             <td className="border px-2 py-1">{p.id}</td>
             <td className="border px-2 py-1">
@@ -56,5 +56,5 @@ export default function Leaderboard({ contestId }: { contestId: number }) {
         ))}
       </tbody>
     </table>
-  );
+  )
 }
