@@ -1,48 +1,54 @@
 // web/src/pages/MyPicksPage.tsx
-import React, { useState, useEffect } from 'react';
-import { getMyPicks } from '../services/api';
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import { getMyPicks } from '../services/api'
 
 interface Pick {
-  id: number;
-  contestId: number;
-  choice: string;
-  createdAt: string;
-  sport: string;
-  type: string;
-  description: string;
+  id: number
+  contestId: number
+  choice: string
+  createdAt: string
+  sport: string
+  type: string
+  description: string
 }
 
 export default function MyPicksPage() {
-  const [picks, setPicks] = useState<Pick[] | null>(null);
-  const [error, setError] = useState(false);
+  const { user } = useAuth()                    // <-- get the logged-in user
+  const [picks, setPicks] = useState<Pick[] | null>(null)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
-    let mounted = true;
-    console.log('📣 MyPicksPage: fetching picks for user 1');
+    if (!user) return                          // don’t fire until we have a user
+    let mounted = true
+    console.log(`📣 MyPicksPage: fetching picks for user ${user.id}`)
 
-    getMyPicks(1)
+    getMyPicks(user.id)                         // <-- use user.id, not 1
       .then((data) => {
-        console.log('📣 MyPicksPage fetched:', data);
-        if (mounted) setPicks(data);
+        console.log('📣 MyPicksPage fetched:', data)
+        if (mounted) setPicks(data)
       })
       .catch((e) => {
-        console.error('⚠️ MyPicksPage error:', e);
-        if (mounted) setError(true);
-      });
+        console.error('⚠️ MyPicksPage error:', e)
+        if (mounted) setError(true)
+      })
 
     return () => {
-      mounted = false;
-    };
-  }, []);
+      mounted = false
+    }
+  }, [user])
 
+  if (!user) {
+    return <div>Loading user…</div>
+  }
   if (error) {
-    return <div className="text-red-500">Failed to load your picks</div>;
+    return <div className="text-red-500">Failed to load your picks</div>
   }
   if (picks === null) {
-    return <div>Loading your picks…</div>;
+    return <div>Loading your picks…</div>
   }
   if (picks.length === 0) {
-    return <div className="text-gray-500">You haven’t made any picks yet.</div>;
+    return <div className="text-gray-500">You haven’t made any picks yet.</div>
   }
 
   return (
@@ -77,5 +83,5 @@ export default function MyPicksPage() {
         ))}
       </ul>
     </section>
-  );
+  )
 }

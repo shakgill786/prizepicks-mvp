@@ -8,16 +8,19 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  picks     Pick[]
-  createdAt DateTime @default(now())
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  password     String
+  displayName  String?
+  avatarUrl    String?
+  isAdmin      Boolean   @default(false)
+  picks        Pick[]
+  createdAt    DateTime  @default(now())
 }
 
 model Sport {
   id            Int            @id @default(autoincrement())
-  slug          String         @unique // "nba", "nfl", etc.
+  slug          String         @unique
   name          String
   propTemplates PropTemplate[]
   contests      Contest[]
@@ -30,7 +33,7 @@ model PropTemplate {
   description String
   statKey     String
   threshold   Float
-  direction   String // "over" or "under"
+  direction   String
   contests    Contest[]
 }
 
@@ -40,19 +43,19 @@ model Contest {
   sportId     Int
   template    PropTemplate @relation(fields: [templateId], references: [id])
   templateId  Int
-  contestType String // "daily" or "weekly"
+  contestType String
   startAt     DateTime
   endAt       DateTime
   picks       Pick[]
 }
 
 model Pick {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    Int
-  contest   Contest  @relation(fields: [contestId], references: [id])
-  contestId Int
-  choice    String // "over" or "under"
-  score     Float? // nullable until scored
-  createdAt DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  contest    Contest  @relation(fields: [contestId], references: [id])
+  contestId  Int
+  choice     String
+  score      Float?
+  createdAt  DateTime @default(now())
 }

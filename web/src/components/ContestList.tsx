@@ -1,10 +1,9 @@
-// web/src/components/ContestList.tsx
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getContests } from '../services/api'
 
-interface Contest {
+export interface Contest {
   id: number
   sport: string
   type: string
@@ -13,50 +12,32 @@ interface Contest {
 
 export default function ContestList() {
   const navigate = useNavigate()
-  const { data: contests, status } = useQuery<Contest[], Error>({
+
+  const {
+    data: contests = [],
+    status,
+    error,
+  } = useQuery<Contest[], Error>({
+    // required shape:
     queryKey: ['contests'],
     queryFn: getContests,
   })
 
-  // loading
-  if (status === 'pending') {
-    return (
-      <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="
-              animate-pulse
-              bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200
-              dark:from-gray-700 dark:via-gray-600 dark:to-gray-700
-              rounded-xl shadow border border-gray-300 dark:border-gray-600
-              p-6 h-48
-            "
-          >
-            <div className="h-6 w-1/2 mb-4 bg-white dark:bg-gray-900 rounded" />
-            <div className="space-y-2">
-              <div className="h-4 bg-white dark:bg-gray-900 rounded" />
-              <div className="h-4 w-5/6 bg-white dark:bg-gray-900 rounded" />
-            </div>
-          </div>
-        ))}
-      </div>
-    )
+  if (status === 'loading') {
+    return <div>Loading contests…</div>
   }
 
-  // error
   if (status === 'error') {
-    return <div className="text-red-500">Failed to load contests</div>
+    return <div className="text-red-500">Error loading contests: {error?.message}</div>
   }
 
-  // success
   return (
     <section aria-labelledby="contests-heading">
       <h2 id="contests-heading" className="sr-only">
         Available Contests
       </h2>
       <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {contests!.map((c: Contest) => (
+        {contests.map((c: Contest) => (
           <motion.div
             key={c.id}
             role="link"

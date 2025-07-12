@@ -1,44 +1,85 @@
-// web/src/App.tsx
-
-import { HashRouter as Router, useLocation } from 'react-router-dom'
-import { Routes, Route } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { AnimatePresence } from 'framer-motion'
-
+import React, { type ReactNode } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Layout from './components/Layout'
 import ContestList from './components/ContestList'
-import AdminPage from './pages/AdminPage'
+import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
+import ProfilePage from './pages/ProfilePage'
 import ContestPage from './pages/ContestPage'
+import AdminPage from './pages/AdminPage'
 import MyPicksPage from './pages/MyPicksPage'
 import NotFound from './components/NotFound'
+import { useAuth } from './contexts/AuthContext'
 
-const queryClient = new QueryClient()
-
-function AnimatedRoutes() {
-  const location = useLocation()
-  return (
-    <AnimatePresence mode="wait" initial={false}>
-      <Routes key={location.pathname} location={location}>
-        <Route path="/" element={<ContestList />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/contests/:id" element={<ContestPage />} />
-        <Route path="/profile" element={<MyPicksPage />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </AnimatePresence>
-  )
+interface ProtectedProps {
+  children: ReactNode
+}
+function Protected({ children }: ProtectedProps) {
+  const { user } = useAuth()
+  return user ? <>{children}</> : <Navigate to="/login" replace />
 }
 
 export default function App() {
+  const location = useLocation()
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <Layout>
-          <AnimatedRoutes />
-        </Layout>
-      </Router>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    <Layout>
+      <Routes location={location} key={location.pathname}>
+        {/* public */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+
+        {/* private */}
+        <Route
+          path="/"
+          element={
+            <Protected>
+              <ContestList />
+            </Protected>
+          }
+        />
+        <Route
+          path="/contests/:id"
+          element={
+            <Protected>
+              <ContestPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <Protected>
+              <ProfilePage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <Protected>
+              <AdminPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/mypicks"
+          element={
+            <Protected>
+              <MyPicksPage />
+            </Protected>
+          }
+        />
+        {/* catch-all */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Layout>
   )
 }
+
+// wrap this in BrowserRouter in your entry-point (main.tsx):
+// createRoot(...).render(
+//   <BrowserRouter>
+//     <App/>
+//   </BrowserRouter>
+// )

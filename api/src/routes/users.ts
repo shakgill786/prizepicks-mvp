@@ -1,35 +1,43 @@
 // api/src/routes/users.ts
+import express, { Request, Response, NextFunction } from 'express'
+import { PrismaClient } from '@prisma/client'
+import { authMiddleware, AuthRequest } from '../middleware/auth'
 
-import { Router, Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const router = Router();
-const db = new PrismaClient();
+const router = express.Router()
+const db = new PrismaClient()
 
 /**
  * GET /api/users/:userId/picks
- * Returns all picks for a given user, joined with contest info.
+ * Returns the authenticated user’s picks.
  */
 router.get(
   '/:userId/picks',
-  async (req: Request, res: Response, next: NextFunction) => {
-    const userId = parseInt(req.params.userId, 10);
-    console.log(`🔍 Fetching picks for user ${userId}`);
-
+  authMiddleware, // ensures req.userId is set from the JWT
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
+      const requestedUserId = Number(req.params.userId)
+
+      // Prevent users from fetching other users' picks
+      if (req.userId !== requestedUserId) {
+        res.status(403).json({ message: 'Forbidden' })
+        return
+      }
+
+      // Fetch picks, including contest → sport & template data
       const picks = await db.pick.findMany({
-        where: { userId },
+        where: { userId: requestedUserId },
         include: {
           contest: {
             include: {
               sport: true,
-              template: true
-            }
-          }
+              template: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
-      });
+      })
 
+      // Shape the response
       const result = picks.map((p) => ({
         id: p.id,
         contestId: p.contestId,
@@ -38,15 +46,13 @@ router.get(
         sport: p.contest.sport.slug,
         type: p.contest.contestType,
         description: p.contest.template.description,
-      }));
+      }))
 
-      console.log(`🗄️  /api/users/${userId}/picks →`, result);
-      res.json(result);
+      res.json(result)
     } catch (err) {
-      console.error(`❌ Error fetching picks for user ${userId}:`, err);
-      next(err);
+      next(err)
     }
   }
-);
+)
 
-export default router;
+export default router
