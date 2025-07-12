@@ -1,3 +1,4 @@
+// web/src/contexts/AuthContext.tsx
 import React, {
   createContext,
   useState,
@@ -12,11 +13,12 @@ export interface User {
   email: string
   displayName?: string
   avatarUrl?: string
-  isAdmin: boolean        // ← added
+  isAdmin: boolean
 }
 
 interface AuthContextType {
   user: User | null
+  setUser: (user: User | null) => void
   token: string | null
   login: (email: string, password: string) => Promise<void>
   signup: (
@@ -34,37 +36,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const navigate = useNavigate()
 
-  // hydrate from localStorage
+  // hydrate from localStorage once on mount
   useEffect(() => {
     const saved = localStorage.getItem('auth')
     if (saved) {
-      const { token, user } = JSON.parse(saved)
-      setToken(token)
-      setUser(user)
+      const parsed = JSON.parse(saved)
+      setToken(parsed.token)
+      setUser(parsed.user)
     }
   }, [])
 
-  // persist on change
+  // persist changes to user/token, but never wipe out on mount
   useEffect(() => {
     if (token && user) {
       localStorage.setItem('auth', JSON.stringify({ token, user }))
-    } else {
-      localStorage.removeItem('auth')
     }
   }, [token, user])
 
   async function login(email: string, password: string) {
     const resp = await fetch('/api/auth/login', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     })
     if (!resp.ok) throw new Error(await resp.text())
-    const { token, user } = await resp.json()
-    setToken(token)
-    setUser(user)
+    const { token: t, user: u } = await resp.json()
+    setToken(t)
+    setUser(u)
     navigate('/')
   }
 
@@ -75,26 +73,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ) {
     const resp = await fetch('/api/auth/signup', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, displayName }),
     })
     if (!resp.ok) throw new Error(await resp.text())
-    const { token, user } = await resp.json()
-    setToken(token)
-    setUser(user)
+    const { token: t, user: u } = await resp.json()
+    setToken(t)
+    setUser(u)
     navigate('/')
   }
 
   function logout() {
     setToken(null)
     setUser(null)
+    localStorage.removeItem('auth')
     navigate('/login')
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, signup, logout }}>
+    <AuthContext.Provider
+      value={{ user, setUser, token, login, signup, logout }}
+    >
       {children}
     </AuthContext.Provider>
   )

@@ -82,3 +82,18 @@ export function getMyPicks(userId: number) {
     },
   }).then(handleRes)
 }
+
+export function updateProfile(
+  userId: number,
+  data: { displayName?: string; avatarUrl?: string }
+) {
+  return fetch(`${API_BASE}/api/users/${userId}`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(data),
+  }).then(handleRes)
+}

@@ -12,32 +12,25 @@ const db = new PrismaClient()
  */
 router.get(
   '/:userId/picks',
-  authMiddleware, // ensures req.userId is set from the JWT
+  authMiddleware,
   async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const requestedUserId = Number(req.params.userId)
-
-      // Prevent users from fetching other users' picks
       if (req.userId !== requestedUserId) {
         res.status(403).json({ message: 'Forbidden' })
         return
       }
 
-      // Fetch picks, including contest → sport & template data
       const picks = await db.pick.findMany({
         where: { userId: requestedUserId },
         include: {
           contest: {
-            include: {
-              sport: true,
-              template: true,
-            },
+            include: { sport: true, template: true },
           },
         },
         orderBy: { createdAt: 'desc' },
       })
 
-      // Shape the response
       const result = picks.map((p) => ({
         id: p.id,
         contestId: p.contestId,
@@ -49,6 +42,39 @@ router.get(
       }))
 
       res.json(result)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+/**
+ * PATCH /api/users/:userId
+ * Update the authenticated user’s profile.
+ */
+router.patch(
+  '/:userId',
+  authMiddleware,
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const requestedUserId = Number(req.params.userId)
+      if (req.userId !== requestedUserId) {
+        res.status(403).json({ message: 'Forbidden' })
+        return
+      }
+
+      const { displayName, avatarUrl } = req.body as {
+        displayName?: string
+        avatarUrl?: string
+      }
+
+      const updated = await db.user.update({
+        where: { id: requestedUserId },
+        data: { displayName, avatarUrl },
+        select: { id: true, email: true, displayName: true, avatarUrl: true, isAdmin: true },
+      })
+
+      res.json(updated)
     } catch (err) {
       next(err)
     }
