@@ -24,17 +24,19 @@ export default function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // hide nav entirely on auth pages if you prefer:
+  // hide the nav bar on login/signup pages
   const hideNav = ['/login', '/signup'].includes(location.pathname)
 
+  // static link always shown
   const staticLinks: NavItem[] = [{ label: 'Home', to: '/' }]
 
+  // links depending on auth state
   const authLinks: NavItem[] = user
     ? [
         { label: 'Profile', to: '/profile' },
         { label: 'My Picks', to: '/mypicks' },
         ...(user.isAdmin ? [{ label: 'Admin', to: '/admin' }] : []),
-        { label: 'Log Out', action: () => logout() },
+        { label: 'Log Out', action: logout },
       ]
     : [
         { label: 'Log In', to: '/login' },
@@ -55,9 +57,8 @@ export default function Layout({ children }: { children: ReactNode }) {
           >
             PrizePicks
           </Link>
-
           <div className="flex items-center space-x-4">
-            {/* theme toggle */}
+            {/* Theme toggle */}
             <button
               onClick={toggle}
               aria-label="Toggle dark mode"
@@ -70,7 +71,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               )}
             </button>
 
-            {/* avatar + name */}
+            {/* User avatar & name */}
             {user && (
               <div className="hidden md:flex items-center space-x-2 ml-4">
                 {user.avatarUrl ? (
@@ -88,7 +89,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               </div>
             )}
 
-            {/* mobile menu toggle */}
+            {/* Mobile menu toggle */}
             <button
               onClick={() => setMenuOpen((o) => !o)}
               aria-label="Toggle navigation menu"
@@ -102,7 +103,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               )}
             </button>
 
-            {/* nav links */}
+            {/* Navigation links */}
             <nav className={`${menuOpen ? 'block' : 'hidden'} md:block`}>
               <ul className="flex flex-col md:flex-row md:space-x-6 text-gray-700 dark:text-gray-200">
                 {staticLinks.concat(authLinks).map((item) => (
@@ -120,7 +121,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                         onClick={() => {
                           item.action?.()
                           setMenuOpen(false)
-                          if (!item.to) navigate('/login')
+                          navigate('/login')
                         }}
                         className="block px-2 py-1 focus:outline-none focus:ring focus:ring-primary focus:ring-offset-2"
                       >

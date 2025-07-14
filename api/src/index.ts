@@ -16,12 +16,14 @@ dotenv.config()
 
 const app = express()
 
-app.use(cors({
-  origin: 'http://localhost:5173',      // allow your React app origin
-  credentials: true,                    // enable Access-Control-Allow-Credentials
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}))
+app.use(
+  cors({
+    origin: 'http://localhost:5173',      // allow your React app origin
+    credentials: true,                    // enable Access-Control-Allow-Credentials
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],  // include PATCH
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+)
 
 app.use(express.json())
 
@@ -38,13 +40,12 @@ app.get('/', (_req: Request, res: Response) => {
 })
 
 // global error handler
-app.use(
-  (err: any, _req: Request, res: Response, _next: NextFunction) => {
-    console.error(err)
-    res.status(500).json({ error: err.message || 'Internal Server Error' })
-  }
-)
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err)
+  res.status(500).json({ error: err.message || 'Internal Server Error' })
+})
 
+// schedule scoring job every hour
 cron.schedule('0 * * * *', () => {
   console.log('🕑 Running scoring job')
   runScoring().catch(console.error)
